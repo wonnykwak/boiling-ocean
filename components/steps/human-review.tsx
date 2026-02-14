@@ -1,16 +1,16 @@
-"use client"
+"use client";
 
-import { useState, useMemo } from "react"
-import { useWorkflow } from "@/lib/workflow-context"
-import { WorkflowStep, FAILURE_MODES, type HumanReview } from "@/lib/types"
-import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { Textarea } from "@/components/ui/textarea"
-import { Badge } from "@/components/ui/badge"
-import { Label } from "@/components/ui/label"
-import { Checkbox } from "@/components/ui/checkbox"
-import { Slider } from "@/components/ui/slider"
-import { ArrowLeft, ArrowRight, Star, CheckCircle2 } from "lucide-react"
+import { useState, useMemo } from "react";
+import { useWorkflow } from "@/lib/workflow-context";
+import { WorkflowStep, FAILURE_MODES, type HumanReview } from "@/lib/types";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Label } from "@/components/ui/label";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Slider } from "@/components/ui/slider";
+import { ArrowLeft, ArrowRight, Star, CheckCircle2 } from "lucide-react";
 
 const FLAG_OPTIONS = [
   { id: "incorrect", label: "Incorrect Information" },
@@ -19,24 +19,24 @@ const FLAG_OPTIONS = [
   { id: "hallucination", label: "Hallucination" },
   { id: "overconfident", label: "Overconfident" },
   { id: "privacy-violation", label: "Privacy Violation" },
-]
+];
 
-const SAMPLE_SIZE = 10
+const SAMPLE_SIZE = 10;
 
 export function HumanReviewStep() {
-  const { state, dispatch } = useWorkflow()
-  const [currentIndex, setCurrentIndex] = useState(0)
+  const { state, dispatch } = useWorkflow();
+  const [currentIndex, setCurrentIndex] = useState(0);
 
   // Select a random sample of responses for human review
   const sampleResponses = useMemo(() => {
-    const shuffled = [...state.responses].sort(() => Math.random() - 0.5)
-    return shuffled.slice(0, Math.min(SAMPLE_SIZE, shuffled.length))
-  }, [state.responses])
+    const shuffled = [...state.responses].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, Math.min(SAMPLE_SIZE, shuffled.length));
+  }, [state.responses]);
 
-  const currentResponse = sampleResponses[currentIndex]
+  const currentResponse = sampleResponses[currentIndex];
   const existingReview = state.humanReviews.find(
-    (r) => r.responseId === currentResponse?.questionId
-  )
+    (r) => r.responseId === currentResponse?.questionId,
+  );
 
   const [review, setReview] = useState<HumanReview>(
     existingReview ?? {
@@ -46,12 +46,13 @@ export function HumanReviewStep() {
       overallRating: 3,
       flags: [],
       clinicalContext: "",
-    }
-  )
+    },
+  );
 
-  const reviewedCount = state.humanReviews.length
+  const reviewedCount = state.humanReviews.length;
   const modeLabel =
-    FAILURE_MODES.find((fm) => fm.id === currentResponse?.failureMode)?.label ?? ""
+    FAILURE_MODES.find((fm) => fm.id === currentResponse?.failureMode)?.label ??
+    "";
 
   function handleFlagToggle(flagId: string) {
     setReview((prev) => ({
@@ -59,21 +60,21 @@ export function HumanReviewStep() {
       flags: prev.flags.includes(flagId)
         ? prev.flags.filter((f) => f !== flagId)
         : [...prev.flags, flagId],
-    }))
+    }));
   }
 
   function handleSaveAndNext() {
     dispatch({
       type: "ADD_HUMAN_REVIEW",
       review: { ...review, responseId: currentResponse.questionId },
-    })
+    });
 
     if (currentIndex < sampleResponses.length - 1) {
-      const nextResponse = sampleResponses[currentIndex + 1]
+      const nextResponse = sampleResponses[currentIndex + 1];
       const nextExisting = state.humanReviews.find(
-        (r) => r.responseId === nextResponse?.questionId
-      )
-      setCurrentIndex((i) => i + 1)
+        (r) => r.responseId === nextResponse?.questionId,
+      );
+      setCurrentIndex((i) => i + 1);
       setReview(
         nextExisting ?? {
           responseId: nextResponse?.questionId ?? "",
@@ -82,13 +83,13 @@ export function HumanReviewStep() {
           overallRating: 3,
           flags: [],
           clinicalContext: "",
-        }
-      )
+        },
+      );
     }
   }
 
   function handleBack() {
-    dispatch({ type: "SET_STEP", step: WorkflowStep.COLLECT })
+    dispatch({ type: "SET_STEP", step: WorkflowStep.COLLECT });
   }
 
   function handleGenerateReport() {
@@ -96,21 +97,23 @@ export function HumanReviewStep() {
     dispatch({
       type: "ADD_HUMAN_REVIEW",
       review: { ...review, responseId: currentResponse.questionId },
-    })
-    dispatch({ type: "SET_STEP", step: WorkflowStep.REPORT })
+    });
+    dispatch({ type: "SET_STEP", step: WorkflowStep.REPORT });
   }
 
   function handleSkipToReport() {
-    dispatch({ type: "SET_STEP", step: WorkflowStep.REPORT })
+    dispatch({ type: "SET_STEP", step: WorkflowStep.REPORT });
   }
 
   if (!currentResponse) {
     return (
       <div className="flex flex-col items-center gap-4 py-12">
-        <p className="text-muted-foreground">No responses available for review.</p>
+        <p className="text-muted-foreground">
+          No responses available for review.
+        </p>
         <Button onClick={handleBack}>Go Back</Button>
       </div>
-    )
+    );
   }
 
   return (
@@ -121,11 +124,12 @@ export function HumanReviewStep() {
             Human Review
           </h2>
           <p className="text-muted-foreground mt-1">
-            Review {sampleResponses.length} sampled responses. Rate accuracy, safety, and flag issues.
+            Review {SAMPLE_SIZE} sampled responses. Rate accuracy, safety, and
+            flag issues.
           </p>
         </div>
         <Badge variant="secondary" className="text-sm tabular-nums">
-          {currentIndex + 1} / {sampleResponses.length}
+          {currentIndex + 1} / {SAMPLE_SIZE}
         </Badge>
       </div>
 
@@ -176,17 +180,23 @@ export function HumanReviewStep() {
             <RatingSlider
               label="Accuracy"
               value={review.accuracyRating}
-              onChange={(v) => setReview((prev) => ({ ...prev, accuracyRating: v }))}
+              onChange={(v) =>
+                setReview((prev) => ({ ...prev, accuracyRating: v }))
+              }
             />
             <RatingSlider
               label="Safety"
               value={review.safetyRating}
-              onChange={(v) => setReview((prev) => ({ ...prev, safetyRating: v }))}
+              onChange={(v) =>
+                setReview((prev) => ({ ...prev, safetyRating: v }))
+              }
             />
             <RatingSlider
               label="Overall"
               value={review.overallRating}
-              onChange={(v) => setReview((prev) => ({ ...prev, overallRating: v }))}
+              onChange={(v) =>
+                setReview((prev) => ({ ...prev, overallRating: v }))
+              }
             />
           </div>
 
@@ -216,7 +226,10 @@ export function HumanReviewStep() {
               id="clinicalContext"
               value={review.clinicalContext}
               onChange={(e) =>
-                setReview((prev) => ({ ...prev, clinicalContext: e.target.value }))
+                setReview((prev) => ({
+                  ...prev,
+                  clinicalContext: e.target.value,
+                }))
               }
               placeholder="Add any clinical context, corrections, or notes about this response..."
               rows={3}
@@ -234,7 +247,11 @@ export function HumanReviewStep() {
             Back
           </Button>
           {reviewedCount > 0 && (
-            <Button variant="ghost" onClick={handleSkipToReport} className="text-muted-foreground">
+            <Button
+              variant="ghost"
+              onClick={handleSkipToReport}
+              className="text-muted-foreground"
+            >
               Skip to Report ({reviewedCount} reviewed)
             </Button>
           )}
@@ -254,7 +271,7 @@ export function HumanReviewStep() {
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 function RatingSlider({
@@ -262,9 +279,9 @@ function RatingSlider({
   value,
   onChange,
 }: {
-  label: string
-  value: number
-  onChange: (v: number) => void
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
 }) {
   return (
     <div className="flex flex-col gap-2">
@@ -285,5 +302,5 @@ function RatingSlider({
         className="w-full"
       />
     </div>
-  )
+  );
 }
