@@ -7,7 +7,7 @@ import React, {
   useEffect,
   useCallback,
 } from "react";
-import type {
+import {
   WorkflowState,
   WorkflowStep,
   ModelConfig,
@@ -16,6 +16,11 @@ import type {
   HumanReview,
   AuditReport,
 } from "./types";
+import {
+  DEFAULT_DESCRIPTION,
+  DEFAULT_QUESTIONS,
+  DEFAULT_RESPONSES,
+} from "./consts";
 
 const STORAGE_KEY = "ai-validation-workflow";
 
@@ -34,7 +39,8 @@ type Action =
   | { type: "SET_LOADING"; loading: boolean }
   | { type: "SET_ERROR"; error: string | null }
   | { type: "RESET" }
-  | { type: "HYDRATE"; state: WorkflowState };
+  | { type: "HYDRATE"; state: WorkflowState }
+  | { type: "DEBUG_SKIP_TO"; step: WorkflowStep };
 
 const initialState: WorkflowState = {
   step: 0,
@@ -43,6 +49,68 @@ const initialState: WorkflowState = {
   responses: [],
   humanReviews: [],
   report: null,
+};
+
+const DEBUG_DEFAULT_STEP_STATES: Record<WorkflowStep, WorkflowState> = {
+  [WorkflowStep.CONFIGURE]: initialState,
+  [WorkflowStep.GENERATE]: {
+    ...initialState,
+    step: 1,
+    modelConfig: {
+      provider: "openai",
+      apiKey: "",
+      modelId: "gpt-4o",
+      description: DEFAULT_DESCRIPTION,
+    },
+  },
+  [WorkflowStep.REVIEW]: {
+    ...initialState,
+    step: 2,
+    modelConfig: {
+      provider: "openai",
+      apiKey: "",
+      modelId: "gpt-4o",
+      description: DEFAULT_DESCRIPTION,
+    },
+    questions: DEFAULT_QUESTIONS,
+  },
+  [WorkflowStep.COLLECT]: {
+    ...initialState,
+    step: 3,
+    modelConfig: {
+      provider: "openai",
+      apiKey: "",
+      modelId: "gpt-4o",
+      description: DEFAULT_DESCRIPTION,
+    },
+    questions: DEFAULT_QUESTIONS,
+  },
+  [WorkflowStep.HUMAN_REVIEW]: {
+    step: 4,
+    modelConfig: {
+      provider: "openai",
+      apiKey: "",
+      modelId: "gpt-4o",
+      description: DEFAULT_DESCRIPTION,
+    },
+    questions: DEFAULT_QUESTIONS,
+    responses: DEFAULT_RESPONSES,
+    humanReviews: [],
+    report: null,
+  },
+  [WorkflowStep.REPORT]: {
+    step: 4,
+    modelConfig: {
+      provider: "openai",
+      apiKey: "",
+      modelId: "gpt-4o",
+      description: DEFAULT_DESCRIPTION,
+    },
+    questions: DEFAULT_QUESTIONS,
+    responses: DEFAULT_RESPONSES,
+    humanReviews: [], // todo: change
+    report: null,
+  },
 };
 
 function reducer(state: WorkflowState, action: Action): WorkflowState {
@@ -94,6 +162,8 @@ function reducer(state: WorkflowState, action: Action): WorkflowState {
       return { ...initialState };
     case "HYDRATE":
       return { ...action.state };
+    case "DEBUG_SKIP_TO":
+      return { ...DEBUG_DEFAULT_STEP_STATES[action.step] };
     default:
       return state;
   }

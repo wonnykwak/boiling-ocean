@@ -28,9 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { AlertCircle, ArrowRight, Shield } from "lucide-react";
-
-const DEFAULT_DESCRIPTION =
-  "A patient-facing chatbot that helps users understand their medications, provides general health information, and assists with appointment scheduling for a large hospital network.";
+import { DEFAULT_DESCRIPTION } from "@/lib/consts";
 
 export function ConfigureModel() {
   const { state, dispatch } = useWorkflow();
