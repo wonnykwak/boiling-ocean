@@ -1,17 +1,23 @@
-"use client"
+"use client";
 
-import { useEffect, useRef, useState } from "react"
-import { useWorkflow } from "@/lib/workflow-context"
-import { WorkflowStep, FAILURE_MODES, type AuditReport } from "@/lib/types"
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
+import { useEffect, useRef, useState } from "react";
+import { useWorkflow } from "@/lib/workflow-context";
+import { WorkflowStep, FAILURE_MODES, type AuditReport } from "@/lib/types";
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+} from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
   ChartContainer,
   ChartTooltip,
   ChartTooltipContent,
   type ChartConfig,
-} from "@/components/ui/chart"
+} from "@/components/ui/chart";
 import {
   Bar,
   BarChart,
@@ -23,7 +29,7 @@ import {
   PolarGrid,
   PolarAngleAxis,
   PolarRadiusAxis,
-} from "recharts"
+} from "recharts";
 import {
   Loader2,
   Download,
@@ -34,37 +40,41 @@ import {
   ChevronUp,
   ArrowLeft,
   RotateCcw,
-} from "lucide-react"
+} from "lucide-react";
 import {
   Collapsible,
   CollapsibleContent,
   CollapsibleTrigger,
-} from "@/components/ui/collapsible"
+} from "@/components/ui/collapsible";
 
 const chartConfig: ChartConfig = {
   score: {
     label: "Score",
     color: "hsl(var(--chart-1))",
   },
-}
+};
 
 export function FinalReport() {
-  const { state, dispatch, resetWorkflow } = useWorkflow()
-  const hasStarted = useRef(false)
-  const [expandedFailures, setExpandedFailures] = useState<Set<number>>(new Set())
+  const { state, dispatch, resetWorkflow } = useWorkflow();
+  const hasStarted = useRef(false);
+  const [expandedFailures, setExpandedFailures] = useState<Set<number>>(
+    new Set(),
+  );
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<null | string>(null);
 
   useEffect(() => {
-    if (hasStarted.current) return
-    if (state.report) return
+    if (hasStarted.current) return;
+    if (state.report) return;
 
-    hasStarted.current = true
-    generateReport()
+    hasStarted.current = true;
+    generateReport();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
+  }, []);
 
   async function generateReport() {
-    dispatch({ type: "SET_LOADING", loading: true })
-    dispatch({ type: "SET_ERROR", error: null })
+    setIsLoading(true);
+    setError(null);
 
     try {
       const res = await fetch("/api/evaluate-responses", {
@@ -75,53 +85,52 @@ export function FinalReport() {
           humanReviews: state.humanReviews,
           description: state.modelConfig!.description,
         }),
-      })
+      });
 
       if (!res.ok) {
-        const err = await res.json()
-        throw new Error(err.error || "Failed to generate report")
+        const err = await res.json();
+        throw new Error(err.error || "Failed to generate report");
       }
 
-      const { data } = await res.json()
-      dispatch({ type: "SET_REPORT", report: data as AuditReport })
-      dispatch({ type: "SET_LOADING", loading: false })
+      const { data } = await res.json();
+      dispatch({ type: "SET_REPORT", report: data as AuditReport });
+      setIsLoading(false);
     } catch (error) {
-      dispatch({
-        type: "SET_ERROR",
-        error: error instanceof Error ? error.message : "Failed to generate report",
-      })
+      setError(
+        error instanceof Error ? error.message : "Failed to generate report",
+      );
     }
   }
 
   function toggleFailure(index: number) {
     setExpandedFailures((prev) => {
-      const next = new Set(prev)
+      const next = new Set(prev);
       if (next.has(index)) {
-        next.delete(index)
+        next.delete(index);
       } else {
-        next.add(index)
+        next.add(index);
       }
-      return next
-    })
+      return next;
+    });
   }
 
   function exportReport() {
-    if (!state.report) return
+    if (!state.report) return;
     const blob = new Blob([JSON.stringify(state.report, null, 2)], {
       type: "application/json",
-    })
-    const url = URL.createObjectURL(blob)
-    const a = document.createElement("a")
-    a.href = url
-    a.download = `safety-audit-report-${new Date().toISOString().slice(0, 10)}.json`
-    document.body.appendChild(a)
-    a.click()
-    document.body.removeChild(a)
-    URL.revokeObjectURL(url)
+    });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `safety-audit-report-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
   }
 
   // Loading state
-  if (state.isLoading) {
+  if (isLoading) {
     return (
       <div className="flex flex-col items-center gap-6 py-12">
         <Card className="w-full max-w-lg">
@@ -132,17 +141,18 @@ export function FinalReport() {
             <div className="text-center">
               <h3 className="text-lg font-semibold">Generating Audit Report</h3>
               <p className="text-sm text-muted-foreground mt-1">
-                Claude is analyzing all responses and human feedback to produce your safety report...
+                Claude is analyzing all responses and human feedback to produce
+                your safety report...
               </p>
             </div>
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
   // Error state
-  if (state.error) {
+  if (error) {
     return (
       <div className="flex flex-col items-center gap-6 py-12">
         <Card className="w-full max-w-lg">
@@ -151,13 +161,15 @@ export function FinalReport() {
               <AlertTriangle className="h-7 w-7 text-destructive" />
             </div>
             <div className="text-center">
-              <h3 className="text-lg font-semibold">Report Generation Failed</h3>
-              <p className="text-sm text-destructive mt-1">{state.error}</p>
+              <h3 className="text-lg font-semibold">
+                Report Generation Failed
+              </h3>
+              <p className="text-sm text-destructive mt-1">{error}</p>
             </div>
             <Button
               onClick={() => {
-                hasStarted.current = false
-                generateReport()
+                hasStarted.current = false;
+                generateReport();
               }}
               variant="outline"
             >
@@ -166,32 +178,32 @@ export function FinalReport() {
           </CardContent>
         </Card>
       </div>
-    )
+    );
   }
 
-  if (!state.report) return null
+  if (!state.report) return null;
 
-  const report = state.report
+  const report = state.report;
 
   const scoreColor =
     report.overallSafetyScore >= 80
       ? "text-[hsl(var(--accent))]"
       : report.overallSafetyScore >= 50
         ? "text-[hsl(var(--warning))]"
-        : "text-destructive"
+        : "text-destructive";
 
   const scoreBg =
     report.overallSafetyScore >= 80
       ? "bg-[hsl(var(--accent))]/10"
       : report.overallSafetyScore >= 50
         ? "bg-[hsl(var(--warning))]/10"
-        : "bg-destructive/10"
+        : "bg-destructive/10";
 
-  const ScoreIcon = report.overallSafetyScore >= 80 ? ShieldCheck : ShieldAlert
+  const ScoreIcon = report.overallSafetyScore >= 80 ? ShieldCheck : ShieldAlert;
 
   // Chart data
   const barData = report.categoryBreakdowns.map((cat) => {
-    const mode = FAILURE_MODES.find((fm) => fm.id === cat.failureMode)
+    const mode = FAILURE_MODES.find((fm) => fm.id === cat.failureMode);
     return {
       name: mode?.label ?? cat.label,
       score: cat.score,
@@ -201,16 +213,16 @@ export function FinalReport() {
           : cat.score >= 50
             ? "hsl(var(--chart-4))"
             : "hsl(var(--chart-3))",
-    }
-  })
+    };
+  });
 
   const radarData = report.categoryBreakdowns.map((cat) => {
-    const mode = FAILURE_MODES.find((fm) => fm.id === cat.failureMode)
+    const mode = FAILURE_MODES.find((fm) => fm.id === cat.failureMode);
     return {
       category: mode?.label ?? cat.label,
       score: cat.score,
-    }
-  })
+    };
+  });
 
   return (
     <div className="flex flex-col gap-6">
@@ -221,11 +233,17 @@ export function FinalReport() {
             Safety Audit Report
           </h2>
           <p className="text-muted-foreground mt-1">
-            Comprehensive evaluation of {state.modelConfig?.modelId} ({state.modelConfig?.provider})
+            Comprehensive evaluation of {state.modelConfig?.modelId} (
+            {state.modelConfig?.provider})
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={exportReport} className="gap-1.5">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={exportReport}
+            className="gap-1.5"
+          >
             <Download className="h-3.5 w-3.5" />
             Export
           </Button>
@@ -235,7 +253,9 @@ export function FinalReport() {
       {/* Overall score */}
       <Card>
         <CardContent className="flex items-center gap-6 py-6">
-          <div className={`flex h-20 w-20 items-center justify-center rounded-2xl ${scoreBg} shrink-0`}>
+          <div
+            className={`flex h-20 w-20 items-center justify-center rounded-2xl ${scoreBg} shrink-0`}
+          >
             <ScoreIcon className={`h-10 w-10 ${scoreColor}`} />
           </div>
           <div className="flex-1">
@@ -245,21 +265,29 @@ export function FinalReport() {
               </span>
               <span className="text-lg text-muted-foreground">/ 100</span>
             </div>
-            <p className="text-sm text-muted-foreground mt-1">Overall Safety Score</p>
+            <p className="text-sm text-muted-foreground mt-1">
+              Overall Safety Score
+            </p>
           </div>
           <div className="hidden sm:flex items-center gap-4 text-sm">
             <div className="text-center">
-              <p className="font-semibold tabular-nums">{report.criticalFailures.length}</p>
+              <p className="font-semibold tabular-nums">
+                {report.criticalFailures.length}
+              </p>
               <p className="text-muted-foreground">Critical Issues</p>
             </div>
             <div className="h-8 w-px bg-border" />
             <div className="text-center">
-              <p className="font-semibold tabular-nums">{report.humanAgreementRate}%</p>
+              <p className="font-semibold tabular-nums">
+                {report.humanAgreementRate}%
+              </p>
               <p className="text-muted-foreground">Human Agreement</p>
             </div>
             <div className="h-8 w-px bg-border" />
             <div className="text-center">
-              <p className="font-semibold tabular-nums">{state.responses.length}</p>
+              <p className="font-semibold tabular-nums">
+                {state.responses.length}
+              </p>
               <p className="text-muted-foreground">Tests Run</p>
             </div>
           </div>
@@ -283,7 +311,9 @@ export function FinalReport() {
         <Card>
           <CardHeader>
             <CardTitle>Category Scores</CardTitle>
-            <CardDescription>Safety score by failure mode (0-100)</CardDescription>
+            <CardDescription>
+              Safety score by failure mode (0-100)
+            </CardDescription>
           </CardHeader>
           <CardContent>
             <ChartContainer config={chartConfig} className="aspect-[4/3]">
@@ -335,29 +365,36 @@ export function FinalReport() {
         </CardHeader>
         <CardContent className="flex flex-col gap-4">
           {report.categoryBreakdowns.map((cat) => {
-            const mode = FAILURE_MODES.find((fm) => fm.id === cat.failureMode)
+            const mode = FAILURE_MODES.find((fm) => fm.id === cat.failureMode);
             const catScoreColor =
               cat.score >= 80
                 ? "text-[hsl(var(--accent))]"
                 : cat.score >= 50
                   ? "text-[hsl(var(--warning))]"
-                  : "text-destructive"
+                  : "text-destructive";
 
             return (
               <div key={cat.failureMode} className="rounded-lg border p-4">
                 <div className="flex items-center justify-between mb-3">
                   <h4 className="font-semibold">{mode?.label ?? cat.label}</h4>
-                  <span className={`text-xl font-bold tabular-nums ${catScoreColor}`}>
+                  <span
+                    className={`text-xl font-bold tabular-nums ${catScoreColor}`}
+                  >
                     {cat.score}
                   </span>
                 </div>
                 <div className="grid gap-3 sm:grid-cols-2">
                   {cat.strengths.length > 0 && (
                     <div>
-                      <p className="text-xs font-medium text-muted-foreground mb-1">Strengths</p>
+                      <p className="text-xs font-medium text-muted-foreground mb-1">
+                        Strengths
+                      </p>
                       <ul className="flex flex-col gap-1">
                         {cat.strengths.map((s, i) => (
-                          <li key={i} className="text-sm text-foreground flex items-start gap-1.5">
+                          <li
+                            key={i}
+                            className="text-sm text-foreground flex items-start gap-1.5"
+                          >
                             <ShieldCheck className="h-3.5 w-3.5 text-[hsl(var(--accent))] shrink-0 mt-0.5" />
                             {s}
                           </li>
@@ -367,10 +404,15 @@ export function FinalReport() {
                   )}
                   {cat.weaknesses.length > 0 && (
                     <div>
-                      <p className="text-xs font-medium text-muted-foreground mb-1">Weaknesses</p>
+                      <p className="text-xs font-medium text-muted-foreground mb-1">
+                        Weaknesses
+                      </p>
                       <ul className="flex flex-col gap-1">
                         {cat.weaknesses.map((w, i) => (
-                          <li key={i} className="text-sm text-foreground flex items-start gap-1.5">
+                          <li
+                            key={i}
+                            className="text-sm text-foreground flex items-start gap-1.5"
+                          >
                             <AlertTriangle className="h-3.5 w-3.5 text-[hsl(var(--warning))] shrink-0 mt-0.5" />
                             {w}
                           </li>
@@ -380,7 +422,7 @@ export function FinalReport() {
                   )}
                 </div>
               </div>
-            )
+            );
           })}
         </CardContent>
       </Card>
@@ -394,7 +436,8 @@ export function FinalReport() {
               Critical Failures ({report.criticalFailures.length})
             </CardTitle>
             <CardDescription>
-              Responses that exhibited potentially dangerous behavior requiring immediate attention.
+              Responses that exhibited potentially dangerous behavior requiring
+              immediate attention.
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
@@ -409,12 +452,18 @@ export function FinalReport() {
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <Badge
-                          variant={failure.severity === "critical" ? "destructive" : "outline"}
+                          variant={
+                            failure.severity === "critical"
+                              ? "destructive"
+                              : "outline"
+                          }
                           className="text-xs"
                         >
                           {failure.severity}
                         </Badge>
-                        <span className="text-sm font-medium">{failure.failureMode}</span>
+                        <span className="text-sm font-medium">
+                          {failure.failureMode}
+                        </span>
                       </div>
                       {expandedFailures.has(i) ? (
                         <ChevronUp className="h-4 w-4 text-muted-foreground" />
@@ -430,16 +479,24 @@ export function FinalReport() {
                 <CollapsibleContent className="px-3 pb-3">
                   <div className="mt-3 flex flex-col gap-3 rounded-md border bg-background p-3">
                     <div>
-                      <p className="text-xs font-medium text-muted-foreground mb-1">Question</p>
+                      <p className="text-xs font-medium text-muted-foreground mb-1">
+                        Question
+                      </p>
                       <p className="text-sm">{failure.question}</p>
                     </div>
                     <div>
-                      <p className="text-xs font-medium text-muted-foreground mb-1">Model Response</p>
+                      <p className="text-xs font-medium text-muted-foreground mb-1">
+                        Model Response
+                      </p>
                       <p className="text-sm">{failure.response}</p>
                     </div>
                     <div>
-                      <p className="text-xs font-medium text-muted-foreground mb-1">Explanation</p>
-                      <p className="text-sm text-destructive">{failure.explanation}</p>
+                      <p className="text-xs font-medium text-muted-foreground mb-1">
+                        Explanation
+                      </p>
+                      <p className="text-sm text-destructive">
+                        {failure.explanation}
+                      </p>
                     </div>
                   </div>
                 </CollapsibleContent>
@@ -476,8 +533,11 @@ export function FinalReport() {
         <Button
           variant="outline"
           onClick={() => {
-            dispatch({ type: "SET_REPORT", report: null as unknown as AuditReport })
-            dispatch({ type: "SET_STEP", step: WorkflowStep.HUMAN_REVIEW })
+            dispatch({
+              type: "SET_REPORT",
+              report: null as unknown as AuditReport,
+            });
+            dispatch({ type: "SET_STEP", step: WorkflowStep.HUMAN_REVIEW });
           }}
           className="gap-1.5"
         >
@@ -490,5 +550,5 @@ export function FinalReport() {
         </Button>
       </div>
     </div>
-  )
+  );
 }

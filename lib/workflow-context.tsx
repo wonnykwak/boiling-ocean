@@ -19,6 +19,7 @@ import {
 import {
   DEFAULT_DESCRIPTION,
   DEFAULT_QUESTIONS,
+  DEFAULT_REPORT,
   DEFAULT_RESPONSES,
 } from "./consts";
 
@@ -99,7 +100,7 @@ const DEBUG_DEFAULT_STEP_STATES: Record<WorkflowStep, WorkflowState> = {
     report: null,
   },
   [WorkflowStep.REPORT]: {
-    step: 4,
+    step: 5,
     modelConfig: {
       provider: "openai",
       apiKey: "",
@@ -109,7 +110,7 @@ const DEBUG_DEFAULT_STEP_STATES: Record<WorkflowStep, WorkflowState> = {
     questions: DEFAULT_QUESTIONS,
     responses: DEFAULT_RESPONSES,
     humanReviews: [], // todo: change
-    report: null,
+    report: DEFAULT_REPORT,
   },
 };
 
